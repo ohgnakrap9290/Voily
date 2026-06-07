@@ -3,6 +3,7 @@ import Recorder from "./components/Recorder";
 import RecordCard from "./components/RecordCard";
 import WordDetail from "./components/WordDetail";
 import WordGraph from "./components/WordGraph";
+import appIcon from "../voily.png";
 import { buildGraphData } from "./utils/graph";
 import { filterRecordsByPeriod } from "./utils/periods";
 import {
@@ -30,6 +31,7 @@ export default function App() {
   const [period, setPeriod] = useState("month");
   const [selectedWord, setSelectedWord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [recordSort, setRecordSort] = useState("newest");
 
   useEffect(() => {
     getRecords()
@@ -48,6 +50,21 @@ export default function App() {
     () => buildGraphData(periodRecords, period),
     [periodRecords, period],
   );
+  const today = useMemo(() => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60_000;
+    return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+  }, []);
+  const todayRecords = useMemo(
+    () => records.filter((record) => record.date === today),
+    [records, today],
+  );
+  const sortedRecords = useMemo(() => {
+    const direction = recordSort === "newest" ? -1 : 1;
+    return [...records].sort(
+      (a, b) => direction * a.createdAt.localeCompare(b.createdAt),
+    );
+  }, [records, recordSort]);
 
   useEffect(() => {
     if (
@@ -70,16 +87,20 @@ export default function App() {
     setRecords((current) => current.filter((record) => record.id !== id));
   }
 
+  async function toggleFavorite(record) {
+    const updatedRecord = { ...record, favorite: !record.favorite };
+    await saveRecord(updatedRecord);
+    setRecords((current) =>
+      current.map((item) => (item.id === record.id ? updatedRecord : item)),
+    );
+  }
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <button className="brand" onClick={() => setScreen("home")}>
-          <span className="brand-mark">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span>Voily</span>
+          <img className="brand-image" src={appIcon} alt="" />
+          <span>VOILY</span>
         </button>
         <nav aria-label="주요 메뉴">
           {NAV_ITEMS.map((item) => (
@@ -103,29 +124,28 @@ export default function App() {
         {screen === "home" && (
           <div className="page home-page">
             <section className="hero">
-              <p className="eyebrow">VOICE, MEMORY, CONNECTION</p>
-              <h1>말로 남긴 하루가<br />천천히 연결됩니다.</h1>
-              <p>목소리는 이 브라우저 안에만 머물고, 반복된 단어는 작은 별자리로 나타납니다.</p>
+              <h1>VOILY</h1>
+              <p>말로 남긴 하루가 천천히 연결됩니다. 목소리는 이 기기 안에만 머물고, 반복된 단어는 작은 별자리로 나타납니다.</p>
             </section>
             <Recorder onSave={addRecord} />
             <section className="recent-section">
               <div className="section-heading">
                 <div>
-                  <p className="eyebrow">RECENT</p>
-                  <h2>최근 기록</h2>
+                  <p className="eyebrow">TODAY</p>
+                  <h2>오늘의 기록</h2>
                 </div>
-                {records.length > 3 && (
+                {todayRecords.length > 3 && (
                   <button className="text-button" onClick={() => setScreen("records")}>
                     모두 보기
                   </button>
                 )}
               </div>
               <div className="record-list">
-                {records.slice(0, 3).map((record) => (
-                  <RecordCard key={record.id} record={record} compact />
+                {todayRecords.slice(0, 3).map((record) => (
+                  <RecordCard key={record.id} record={record} variant="today" />
                 ))}
-                {!isLoading && records.length === 0 && (
-                  <p className="empty-copy">아직 저장된 기록이 없습니다.</p>
+                {!isLoading && todayRecords.length === 0 && (
+                  <p className="empty-copy">오늘 남긴 기록이 없습니다.</p>
                 )}
               </div>
             </section>
@@ -183,14 +203,30 @@ export default function App() {
             <div className="page-title">
               <p className="eyebrow">ARCHIVE</p>
               <h1>모든 기록</h1>
-              <p>이 브라우저에 저장된 {records.length}개의 목소리 기록입니다.</p>
+              <p>이 기기에 저장된 {records.length}개의 목소리 기록입니다.</p>
+              <div className="archive-toolbar">
+                <button
+                  className={recordSort === "newest" ? "active" : ""}
+                  onClick={() => setRecordSort("newest")}
+                >
+                  최신순
+                </button>
+                <button
+                  className={recordSort === "oldest" ? "active" : ""}
+                  onClick={() => setRecordSort("oldest")}
+                >
+                  오래된순
+                </button>
+              </div>
             </div>
             <div className="record-list record-list--full">
-              {records.map((record) => (
+              {sortedRecords.map((record) => (
                 <RecordCard
                   key={record.id}
                   record={record}
                   onDelete={deleteRecord}
+                  onToggleFavorite={toggleFavorite}
+                  variant="archive"
                 />
               ))}
               {!isLoading && records.length === 0 && (

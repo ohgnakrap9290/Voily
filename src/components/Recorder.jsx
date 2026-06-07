@@ -18,6 +18,7 @@ export default function Recorder({ onSave }) {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [message, setMessage] = useState("");
+  const [showTranscript, setShowTranscript] = useState(false);
   const mediaRecorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const chunksRef = useRef([]);
@@ -26,6 +27,7 @@ export default function Recorder({ onSave }) {
   async function startRecording() {
     setMessage("");
     setAudioBlob(null);
+    setShowTranscript(true);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -117,6 +119,7 @@ export default function Recorder({ onSave }) {
 
     setTranscript("");
     setAudioBlob(null);
+    setShowTranscript(false);
     setMessage("기록을 저장했습니다.");
   }
 
@@ -149,22 +152,27 @@ export default function Recorder({ onSave }) {
         </span>
       </button>
 
-      <label className="transcript-field">
-        <span>받아쓰기</span>
-        <textarea
-          value={transcript}
-          onChange={(event) => setTranscript(event.target.value)}
-          placeholder="음성이 글로 나타납니다. 자동 받아쓰기가 안 되면 직접 입력하거나 붙여넣으세요."
-          rows={7}
-        />
-      </label>
+      {showTranscript && (
+        <>
+          <label className="transcript-field">
+            <span>받아쓰기</span>
+            <textarea
+              value={transcript}
+              onChange={(event) => setTranscript(event.target.value)}
+              aria-label="받아쓰기 내용"
+              rows={5}
+            />
+          </label>
 
-      <div className="recorder__footer">
-        <p className="status-message">{message}</p>
-        <button className="primary-button" onClick={save}>
-          기록 저장
-        </button>
-      </div>
+          <div className="recorder__footer">
+            <p className="status-message">{message}</p>
+            <button className="primary-button" onClick={save}>
+              기록 저장
+            </button>
+          </div>
+        </>
+      )}
+      {!showTranscript && message && <p className="status-message">{message}</p>}
     </section>
   );
 }
