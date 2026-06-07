@@ -77,7 +77,6 @@ export function layoutGraph(words, width, height) {
   const shortestSide = Math.min(width, height);
   const nodes = [];
   const edges = [];
-  const maxCount = Math.max(...words.map((item) => item.totalCount));
   const ringCounts = [];
   let remaining = words.length;
   let ringIndex = 0;
@@ -103,9 +102,8 @@ export function layoutGraph(words, width, height) {
         (Math.PI * 2 * indexInRing) / itemsInRing - Math.PI / 2 + ring * 0.18;
       const x = centerX + Math.cos(angle) * ringRadius;
       const y = centerY + Math.sin(angle) * ringRadius;
-      const frequencyRatio =
-        maxCount <= 2 ? 0 : (item.totalCount - 2) / Math.max(maxCount - 2, 1);
-      const wordRadius = 18 + Math.min(frequencyRatio, 1) * 5;
+      const dateRadius = 10;
+      const wordRadius = dateRadius * 1.1;
       const orbitRadius = wordRadius + 18 + Math.min(item.dates.length, 6);
       const wordId = `word-${item.word}`;
 
@@ -131,7 +129,7 @@ export function layoutGraph(words, width, height) {
           type: "date",
           x: dateX,
           y: dateY,
-          radius: 6 + Math.min(Math.max(date.count - 1, 0), 3) * 0.7,
+          radius: dateRadius,
           label: formatDateLabel(date.date, date.count),
           fullLabel: date.date,
         });
