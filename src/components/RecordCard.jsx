@@ -4,6 +4,7 @@ export default function RecordCard({
   record,
   onDelete,
   onToggleFavorite,
+  onPublish,
   variant = "today",
 }) {
   const [audioUrl, setAudioUrl] = useState("");
@@ -34,6 +35,13 @@ export default function RecordCard({
             ) : (
               <span className="no-audio">음성 없음</span>
             )}
+            <button
+              className="icon-button publish-button"
+              onClick={() => onPublish(record)}
+              aria-label="공개 업로드"
+            >
+              ↑
+            </button>
             <button
               className={`icon-button favorite-button ${record.favorite ? "active" : ""}`}
               onClick={() => onToggleFavorite(record)}

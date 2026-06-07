@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /publicPosts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerId', 'date', 'createdAt', 'uploadedAt', 'visibility',
+          'uploadedAtServer', 'transcript', 'words', 'audioUrl', 'audioPath', 'likeCount',
+          'likedBy', 'reportCount', 'reportedBy'
+        ])
+        && request.resource.data.visibility in ['audio', 'text', 'both']
+        && request.resource.data.likeCount == 0
+        && request.resource.data.reportCount == 0
+        && request.resource.data.likedBy == []
+        && request.resource.data.reportedBy == [];
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).changedKeys()
+          .hasOnly(['likeCount', 'likedBy', 'reportCount', 'reportedBy']);
+    }
+  }
+}
