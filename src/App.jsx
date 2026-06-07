@@ -1,5 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import PublishModal from "./components/PublishModal";
+import { useEffect, useMemo, useState } from "react";
 import Recorder from "./components/Recorder";
 import RecordCard from "./components/RecordCard";
 import WordDetail from "./components/WordDetail";
@@ -12,14 +11,10 @@ import {
   getRecords,
   saveRecord,
 } from "./utils/storage";
-import { isFirebaseConfigured } from "./utils/firebaseConfig";
-
-const CommunityFeed = lazy(() => import("./components/CommunityFeed"));
 
 const NAV_ITEMS = [
   { id: "home", label: "기록", icon: "record" },
   { id: "graph", label: "그래프", icon: "graph" },
-  { id: "community", label: "피드", icon: "feed" },
   { id: "records", label: "보관함", icon: "archive" },
 ];
 
@@ -37,7 +32,6 @@ export default function App() {
   const [selectedWord, setSelectedWord] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [recordSort, setRecordSort] = useState("newest");
-  const [publishingRecord, setPublishingRecord] = useState(null);
 
   useEffect(() => {
     getRecords()
@@ -99,11 +93,6 @@ export default function App() {
     setRecords((current) =>
       current.map((item) => (item.id === record.id ? updatedRecord : item)),
     );
-  }
-
-  async function publish(record, visibility) {
-    const { publishRecord } = await import("./utils/community");
-    await publishRecord(record, visibility);
   }
 
   return (
@@ -237,7 +226,6 @@ export default function App() {
                   record={record}
                   onDelete={deleteRecord}
                   onToggleFavorite={toggleFavorite}
-                  onPublish={setPublishingRecord}
                   variant="archive"
                 />
               ))}
@@ -247,20 +235,7 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {screen === "community" && (
-          <Suspense fallback={<div className="page"><p className="empty-copy">피드를 불러오는 중입니다.</p></div>}>
-            <CommunityFeed />
-          </Suspense>
-        )}
       </main>
-
-      <PublishModal
-        record={publishingRecord}
-        isFirebaseReady={isFirebaseConfigured}
-        onClose={() => setPublishingRecord(null)}
-        onPublish={publish}
-      />
     </div>
   );
 }
