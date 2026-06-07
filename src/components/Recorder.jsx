@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { extractKoreanWords } from "../utils/words";
 
 function todayString() {
@@ -19,10 +19,31 @@ export default function Recorder({ onSave }) {
   const [audioBlob, setAudioBlob] = useState(null);
   const [message, setMessage] = useState("");
   const [showTranscript, setShowTranscript] = useState(false);
+  const [microphonePermission, setMicrophonePermission] = useState("prompt");
   const mediaRecorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const chunksRef = useRef([]);
   const stopResolveRef = useRef(null);
+
+  useEffect(() => {
+    if (!navigator.permissions?.query) return undefined;
+
+    let permissionStatus;
+    navigator.permissions
+      .query({ name: "microphone" })
+      .then((status) => {
+        permissionStatus = status;
+        setMicrophonePermission(status.state);
+        status.onchange = () => setMicrophonePermission(status.state);
+      })
+      .catch(() => {
+        // Some mobile browsers do not expose microphone permission state.
+      });
+
+    return () => {
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
+  }, []);
 
   async function startRecording() {
     setMessage("");
@@ -31,6 +52,7 @@ export default function Recorder({ onSave }) {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicrophonePermission("granted");
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
       mediaRecorderRef.current = recorder;
@@ -79,8 +101,13 @@ export default function Recorder({ onSave }) {
       }
 
       setIsRecording(true);
-    } catch {
-      setMessage("마이크를 열 수 없습니다. 권한을 확인하거나 직접 내용을 입력해 주세요.");
+    } catch (error) {
+      if (error?.name === "NotAllowedError") {
+        setMicrophonePermission("denied");
+        setMessage("마이크가 차단됐습니다. 브라우저의 사이트 설정에서 마이크를 허용해 주세요.");
+      } else {
+        setMessage("마이크를 열 수 없습니다. 직접 내용을 입력해 주세요.");
+      }
     }
   }
 
@@ -148,7 +175,15 @@ export default function Recorder({ onSave }) {
         </span>
         <span className="record-button__label">
           <strong>{isRecording ? "녹음 멈추기" : "눌러서 녹음"}</strong>
-          <small>{isRecording ? "녹음 내용을 저장할 수 있어요" : "마이크 권한이 필요해요"}</small>
+          <small>
+            {isRecording
+              ? "녹음 내용을 저장할 수 있어요"
+              : microphonePermission === "granted"
+                ? "마이크 사용 가능"
+                : microphonePermission === "denied"
+                  ? "사이트 설정에서 마이크를 허용해 주세요"
+                  : "처음 녹음할 때 마이크를 허용해 주세요"}
+          </small>
         </span>
       </button>
 

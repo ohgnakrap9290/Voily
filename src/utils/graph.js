@@ -1,3 +1,5 @@
+import { extractKoreanWords } from "./words.js";
+
 const LIMITS = {
   week: 20,
   month: 30,
@@ -9,7 +11,11 @@ export function buildWordOccurrences(records) {
   const occurrences = new Map();
 
   records.forEach((record) => {
-    const counts = record.words.reduce((map, word) => {
+    // Re-extract from the transcript so improved normalization also fixes old records.
+    const words = record.transcript
+      ? extractKoreanWords(record.transcript)
+      : (record.words ?? []);
+    const counts = words.reduce((map, word) => {
       map.set(word, (map.get(word) ?? 0) + 1);
       return map;
     }, new Map());
@@ -97,7 +103,9 @@ export function layoutGraph(words, width, height) {
         (Math.PI * 2 * indexInRing) / itemsInRing - Math.PI / 2 + ring * 0.18;
       const x = centerX + Math.cos(angle) * ringRadius;
       const y = centerY + Math.sin(angle) * ringRadius;
-      const wordRadius = 16 + (item.totalCount / maxCount) * 13;
+      const frequencyRatio =
+        maxCount <= 2 ? 0 : (item.totalCount - 2) / Math.max(maxCount - 2, 1);
+      const wordRadius = 18 + Math.min(frequencyRatio, 1) * 5;
       const orbitRadius = wordRadius + 18 + Math.min(item.dates.length, 6);
       const wordId = `word-${item.word}`;
 
@@ -123,8 +131,8 @@ export function layoutGraph(words, width, height) {
           type: "date",
           x: dateX,
           y: dateY,
-          radius: 6 + Math.min(date.count, 4),
-          label: formatDateLabel(date.date),
+          radius: 6 + Math.min(Math.max(date.count - 1, 0), 3) * 0.7,
+          label: formatDateLabel(date.date, date.count),
           fullLabel: date.date,
         });
         edges.push({
@@ -141,7 +149,8 @@ export function layoutGraph(words, width, height) {
   return { nodes, edges };
 }
 
-function formatDateLabel(dateString) {
+function formatDateLabel(dateString, count) {
   const [, month, day] = dateString.split("-");
-  return `${Number(month)}/${Number(day)}`;
+  const dateLabel = `${Number(month)}/${Number(day)}`;
+  return count > 1 ? `${dateLabel} · ${count}` : dateLabel;
 }

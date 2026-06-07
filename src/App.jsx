@@ -157,7 +157,7 @@ export default function App() {
             <div className="graph-heading">
               <div>
                 <p className="eyebrow">WORD CONSTELLATION</p>
-                <h1>반복된 말의 연결</h1>
+                <h1>그래프</h1>
               </div>
               <div className="period-filter" aria-label="기간 선택">
                 {PERIODS.map((item) => (

@@ -30,6 +30,18 @@ const STOPWORDS = new Set([
   "그런데",
   "이제",
   "지금",
+  "안",
+  "잘",
+  "더",
+  "또",
+  "한",
+  "번",
+  "말",
+  "먹다",
+  "먹었다",
+  "먹었음",
+  "먹는",
+  "먹고",
 ]);
 
 const PARTICLES = [
@@ -64,7 +76,7 @@ function normalizeWord(word) {
   let normalized = word;
 
   for (const particle of PARTICLES) {
-    if (normalized.length - particle.length >= 2 && normalized.endsWith(particle)) {
+    if (normalized.length - particle.length >= 1 && normalized.endsWith(particle)) {
       normalized = normalized.slice(0, -particle.length);
       break;
     }
@@ -74,9 +86,9 @@ function normalizeWord(word) {
 }
 
 export function extractKoreanWords(transcript) {
-  const tokens = transcript.match(/[가-힣]{2,}/g) ?? [];
+  const tokens = transcript.match(/[가-힣]+/g) ?? [];
 
   return tokens
     .map(normalizeWord)
-    .filter((word) => word.length >= 2 && !STOPWORDS.has(word));
+    .filter((word) => word.length >= 1 && !STOPWORDS.has(word));
 }
