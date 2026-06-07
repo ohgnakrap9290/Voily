@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   doc,
   getDocs,
@@ -9,7 +8,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
-  updateDoc,
+  setDoc,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, getAnonymousUser, storage } from "./firebase.js";
@@ -58,7 +57,18 @@ export async function publishRecord(record, visibility) {
     throw new Error("음성 공개를 선택하려면 녹음 파일이 있어야 합니다.");
   }
 
-  const postRef = await addDoc(collection(db, COLLECTION_NAME), {
+  const postRef = doc(collection(db, COLLECTION_NAME));
+
+  if (shouldUploadAudio) {
+    audioPath = `public-audio/${user.uid}/${postRef.id}.webm`;
+    const audioRef = ref(storage, audioPath);
+    await uploadBytes(audioRef, record.audioBlob, {
+      contentType: record.audioBlob.type || "audio/webm",
+    });
+    audioUrl = await getDownloadURL(audioRef);
+  }
+
+  await setDoc(postRef, {
     ownerId: user.uid,
     date: record.date,
     createdAt: record.createdAt,
@@ -74,16 +84,6 @@ export async function publishRecord(record, visibility) {
     reportCount: 0,
     reportedBy: [],
   });
-
-  if (shouldUploadAudio) {
-    audioPath = `public-audio/${user.uid}/${postRef.id}.webm`;
-    const audioRef = ref(storage, audioPath);
-    await uploadBytes(audioRef, record.audioBlob, {
-      contentType: record.audioBlob.type || "audio/webm",
-    });
-    audioUrl = await getDownloadURL(audioRef);
-    await updateDoc(postRef, { audioUrl, audioPath });
-  }
 
   return postRef.id;
 }
