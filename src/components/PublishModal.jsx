@@ -22,8 +22,7 @@ export default function PublishModal({ record, onClose, onPublish, isFirebaseRea
     }
   }
 
-  const showsText = visibility === "text" || visibility === "both";
-  const showsAudio = visibility === "audio" || visibility === "both";
+  const showsText = true;
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true">
@@ -32,7 +31,7 @@ export default function PublishModal({ record, onClose, onPublish, isFirebaseRea
         <p className="eyebrow">PUBLIC UPLOAD</p>
         <h2>공개 업로드 미리보기</h2>
         <p className="privacy-copy">
-          선택한 내용만 공개됩니다. 개인 이름, 전화번호, 주소, 학교, 회사 등 식별 정보가
+          현재는 유료 Storage 없이 텍스트만 공개됩니다. 개인 이름, 전화번호, 주소, 학교, 회사 등 식별 정보가
           들어간 기록은 올리지 않는 것이 안전합니다.
         </p>
 
@@ -44,6 +43,7 @@ export default function PublishModal({ record, onClose, onPublish, isFirebaseRea
           ].map(([value, label]) => (
             <button
               className={visibility === value ? "active" : ""}
+              disabled={value !== "text"}
               key={value}
               onClick={() => setVisibility(value)}
             >
@@ -51,14 +51,13 @@ export default function PublishModal({ record, onClose, onPublish, isFirebaseRea
             </button>
           ))}
         </div>
+        <p className="warning-copy">
+          음성 공개는 Firebase Storage 생성이 필요해서 지금은 꺼두었습니다. 로컬 보관함에서는 음성을 계속 들을 수 있습니다.
+        </p>
 
         <div className="publish-preview">
           <time>{record.date}</time>
           {showsText && <p>{record.transcript}</p>}
-          {showsAudio && (
-            record.audioBlob ? <p className="preview-audio">녹음 파일이 함께 공개됩니다.</p>
-              : <p className="warning-copy">이 기록에는 저장된 음성이 없습니다.</p>
-          )}
         </div>
 
         {!isFirebaseReady && (

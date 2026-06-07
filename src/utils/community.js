@@ -10,8 +10,7 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { db, getAnonymousUser, storage } from "./firebase.js";
+import { db, getAnonymousUser } from "./firebase.js";
 import { isFirebaseConfigured } from "./firebaseConfig.js";
 import { checkPublicPostSafety } from "./moderation.js";
 
@@ -49,24 +48,13 @@ export async function publishRecord(record, visibility) {
   }
 
   const user = await getAnonymousUser();
-  let audioUrl = "";
-  let audioPath = "";
   const shouldUploadAudio = visibility === "audio" || visibility === "both";
 
-  if (shouldUploadAudio && !record.audioBlob) {
-    throw new Error("음성 공개를 선택하려면 녹음 파일이 있어야 합니다.");
+  if (shouldUploadAudio) {
+    throw new Error("현재는 유료 Storage 없이 텍스트 공개만 지원합니다.");
   }
 
   const postRef = doc(collection(db, COLLECTION_NAME));
-
-  if (shouldUploadAudio) {
-    audioPath = `public-audio/${user.uid}/${postRef.id}.webm`;
-    const audioRef = ref(storage, audioPath);
-    await uploadBytes(audioRef, record.audioBlob, {
-      contentType: record.audioBlob.type || "audio/webm",
-    });
-    audioUrl = await getDownloadURL(audioRef);
-  }
 
   await setDoc(postRef, {
     ownerId: user.uid,
@@ -75,10 +63,10 @@ export async function publishRecord(record, visibility) {
     uploadedAt: new Date().toISOString(),
     uploadedAtServer: serverTimestamp(),
     visibility,
-    transcript: visibility === "text" || visibility === "both" ? record.transcript : "",
-    words: visibility === "text" || visibility === "both" ? record.words : [],
-    audioUrl,
-    audioPath,
+    transcript: record.transcript,
+    words: record.words,
+    audioUrl: "",
+    audioPath: "",
     likeCount: 0,
     likedBy: [],
     reportCount: 0,
